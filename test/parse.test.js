@@ -8,7 +8,7 @@ import { parseIssues, parseTeamRoadmap, parseTodo, parseWorklog } from '../serve
 
 const fixture = name => readFileSync(join(dirname(fileURLToPath(import.meta.url)), 'fixtures', name), 'utf8')
 
-test('TODO.md: 제목·스택·버전·진행 체크리스트', () => {
+test('TODO.md: 제목·스택·버전·진행 체크리스트(줄 순서와 상관없이 번호순)', () => {
   const t = parseTodo(fixture('TODO.md'))
   assert.equal(t.title, '별빛 디펜스')
   assert.equal(t.stack, 'Phaser 4 + TypeScript + Vite, 테스트 vitest.')
@@ -20,14 +20,17 @@ test('TODO.md: 제목·스택·버전·진행 체크리스트', () => {
       [1, 'done'],
       [2, 'done'],
       [3, 'done'],
-      [7, 'skipped'],
       [4, 'done'],
       [5, 'done'],
       [6, 'doing'],
+      [7, 'skipped'],
       [8, 'todo'],
     ],
   )
-  assert.equal(t.pipeline[3].note, '건너뜀: 나중에 배포')
+  assert.equal(t.pipeline[6].note, '건너뜀: 나중에 배포')
+  // 괄호 메모 뒤에 말이 더 붙은 줄도 번호·이름·메모를 읽는다
+  assert.equal(t.pipeline[5].label, '개발')
+  assert.equal(t.pipeline[5].note, '작업 목록의 단계를 dev-cycle로 — 1~3단계 완료')
   assert.equal(t.deploy, '(deploy-setup 후 주소)')
 })
 

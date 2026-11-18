@@ -46,7 +46,8 @@ export function tableRows(lines) {
     .filter(cells => cells.some(c => c !== ''))
 }
 
-/** "## gamestudio 진행"(예전 "## gamemanager 진행"·"## gamekit 진행") 체크리스트 → 개발 흐름 8단계 */
+/** "## gamestudio 진행"(예전 "## gamemanager 진행"·"## gamekit 진행") 체크리스트 → 개발 흐름 8단계.
+ *  TODO.md 의 줄 순서와 상관없이 단계 번호순으로 돌려준다. 번호 없는 줄은 뒤에 원래 순서대로 둔다. */
 function parsePipeline(sections) {
   const sec = findSection(sections, t => /^(gamestudio|gamemanager|gamekit) 진행/.test(t))
   if (!sec) return []
@@ -54,9 +55,16 @@ function parsePipeline(sections) {
     .map(parseCheck)
     .filter(Boolean)
     .map(({ status, text }) => {
-      const m = /^(\d+)\.\s*([^(]+?)\s*(?:\((.*)\))?$/.exec(text)
-      return { step: m ? Number(m[1]) : null, label: m ? m[2].trim() : text, note: m?.[3] ?? '', status }
+      // "6. 개발 (메모) — 덧붙인 말" 처럼 괄호 메모 뒤에 말이 더 붙어도 번호·이름·메모를 읽는다
+      const m = /^(\d+)\.\s*(.*)$/.exec(text)
+      if (!m) return { step: null, label: text, note: '', status }
+      const rest = m[2]
+      const label = rest.split(/\s*[(—]/)[0].trim()
+      const paren = /\((.*)\)/.exec(rest)?.[1] ?? ''
+      const tail = /—\s*([^()]*)$/.exec(rest)?.[1].trim() ?? ''
+      return { step: Number(m[1]), label, note: [paren, tail].filter(Boolean).join(' — '), status }
     })
+    .sort((a, b) => (a.step ?? Infinity) - (b.step ?? Infinity))
 }
 
 /** "### 3단계: 이름" 블록 → 목적·완료 조건·범위 밖·위험과 항목들 */

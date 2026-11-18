@@ -7,7 +7,7 @@
 - [-] 7. 배포 설정 (건너뜀: 나중에 배포)
 - [x] 4. 게임 설정 (`docs/design.md`, `docs/numbers.md`)
 - [x] 5. 단계 계획 (아래 작업 목록)
-- [~] 6. 개발 (작업 목록의 단계를 dev-cycle로)
+- [~] 6. 개발 (작업 목록의 단계를 dev-cycle로) — 1~3단계 완료
 - [ ] 8. 스킨 확장
 
 세로 디펜스. 설계 `docs/design.md`, 수치 `docs/numbers.md`.
