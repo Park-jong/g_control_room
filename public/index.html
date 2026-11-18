@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Game Manager</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/vendor/xterm.css" />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">
+          <img src="/icon.svg" alt="" width="20" height="20" />
+          <span>Game Manager</span>
+        </div>
+        <div class="topbar-right">
+          <span id="conn" class="conn" data-state="connecting">연결 중</span>
+          <button id="open-settings" class="btn ghost" type="button">설정</button>
+        </div>
+      </header>
+
+      <aside class="sidebar">
+        <div class="side-head">
+          <h2>게임</h2>
+          <span id="game-count" class="muted"></span>
+        </div>
+        <ul id="game-list" class="game-list" aria-label="게임 목록"></ul>
+      </aside>
+
+      <main class="main">
+        <section id="detail" class="detail" aria-live="polite"></section>
+        <div id="splitter" class="splitter" role="separator" aria-orientation="horizontal" title="드래그해서 터미널 높이 조절"></div>
+        <section id="term-panel" class="term-panel">
+          <div class="term-bar">
+            <div id="term-tabs" class="term-tabs" role="tablist" aria-label="터미널"></div>
+            <div class="term-actions">
+              <div class="menu">
+                <button id="new-term" class="btn small primary" type="button" aria-haspopup="true">+ 새 터미널</button>
+                <div id="new-term-menu" class="menu-pop" hidden>
+                  <button type="button" data-mode="claude">Claude 새 세션</button>
+                  <button type="button" data-mode="continue">Claude 마지막 세션 이어서</button>
+                  <button type="button" data-mode="shell">셸 (PowerShell)</button>
+                </div>
+              </div>
+              <button id="term-toggle" class="btn small ghost" type="button" title="터미널 접기/펴기">접기</button>
+            </div>
+          </div>
+          <div id="quick" class="quick" aria-label="빠른 명령"></div>
+          <div id="term-host" class="term-host"></div>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="settings" class="settings">
+      <form id="settings-form" method="dialog">
+        <h2>설정</h2>
+        <label>
+          <span>게임 상위 폴더 <em>한 줄에 하나. 바로 아래 폴더 중 TODO.md 나 .dev-team 이 있는 폴더를 게임으로 찾습니다</em></span>
+          <textarea name="roots" rows="3" placeholder="C:\games"></textarea>
+        </label>
+        <label>
+          <span>게임 폴더 직접 추가 <em>한 줄에 하나</em></span>
+          <textarea name="projects" rows="3" placeholder="C:\games\my-game"></textarea>
+        </label>
+        <label>
+          <span>claude 실행 파일 <em>비우면 PATH 에서 찾습니다</em></span>
+          <input name="claudePath" type="text" />
+        </label>
+        <label>
+          <span>gamemanager 플러그인 폴더</span>
+          <input name="pluginDir" type="text" />
+        </label>
+        <label class="check">
+          <input name="usePluginDir" type="checkbox" />
+          <span>claude 를 <code>--plugin-dir</code> 로 이 플러그인과 함께 실행 <em>플러그인을 설치했다면 끄세요. 켜 두면 두 벌로 동작합니다</em></span>
+        </label>
+        <label>
+          <span>셸 프로그램</span>
+          <input name="shell" type="text" />
+        </label>
+        <p id="settings-error" class="error" hidden></p>
+        <div class="dialog-actions">
+          <button type="button" class="btn ghost" id="settings-cancel">취소</button>
+          <button type="submit" class="btn primary" value="save">저장</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="/vendor/xterm.js"></script>
+    <script src="/vendor/addon-fit.js"></script>
+    <script src="/vendor/addon-web-links.js"></script>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>
