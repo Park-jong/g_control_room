@@ -1,6 +1,6 @@
-# gamemanager 대시보드
+# control_room 대시보드
 
-gamemanager 플러그인으로 만드는 게임들의 진행 상황을 보고, 브라우저 안의 진짜 터미널로 `claude`를 실행하는 로컬 웹 앱입니다. **이 PC에서만** 열립니다.
+gamestudio 플러그인으로 만드는 게임들의 진행 상황을 보고, 브라우저 안의 진짜 터미널로 `claude`를 실행하는 로컬 웹 앱입니다. **이 PC에서만** 열립니다.
 
 ## 실행
 
@@ -44,7 +44,7 @@ npm start
 |---|---|---|
 | 게임 상위 폴더 / 게임 폴더 | 없음 | 화면의 설정에서 추가 |
 | claude 실행 파일 | PATH에서 찾음 | |
-| 플러그인 폴더 | `../gamemanager` | |
+| 플러그인 폴더 | `../gamestudio` | |
 | `--plugin-dir`로 실행 | 켜짐 | 플러그인을 `/plugin install`로 설치했다면 **끄세요**. 켜 두면 두 벌로 동작합니다 |
 | 셸 | `powershell.exe` | |
 | 포트 | 4317 | `config.json`의 `port` 또는 환경 변수 `PORT` |
@@ -61,5 +61,5 @@ npm start
 
 - `npm test`: 기록 파일 파서 테스트 (`test/fixtures/`)
 - 구성: `server/`(index: HTTP·WebSocket·인증, projects: 게임 찾기·요약, parse: 마크다운 해석, sessions: 세션 기록·조직 현황, terminals: node-pty), `public/`(화면, 빌드 없음)
-- 테스트용으로 띄울 때는 `GM_DATA_DIR`(설정·토큰 위치), `CLAUDE_CONFIG_DIR`(세션 기록 위치), `PORT`로 실제 설정과 분리할 수 있습니다.
+- 테스트용으로 띄울 때는 `CONTROL_ROOM_DATA_DIR`(설정·토큰 위치), `CLAUDE_CONFIG_DIR`(세션 기록 위치), `PORT`로 실제 설정과 분리할 수 있습니다.
 - 한글이 터미널에서 넓게 보이면 고정폭 한글 글꼴(D2Coding 등)을 설치하세요. 화면이 그 글꼴을 먼저 씁니다.

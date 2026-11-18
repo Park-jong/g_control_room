@@ -63,7 +63,7 @@ test('TODO.md: 다음 할 일·결정 대기·완료 표·해석·결정 기록'
 })
 
 test('템플릿 그대로인 TODO.md 도 깨지지 않는다', () => {
-  const t = parseTodo(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'gamemanager', 'skills', 'roadmap', 'todo-template.md'), 'utf8'))
+  const t = parseTodo(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'gamestudio', 'skills', 'roadmap', 'todo-template.md'), 'utf8'))
   assert.equal(t.title, '<가제>')
   assert.equal(t.stages.length, 2)
   assert.deepEqual(t.decisions, [])

@@ -55,7 +55,7 @@ const list = p => {
 
 export const projectId = path => createHash('sha1').update(resolve(path).toLowerCase()).digest('hex').slice(0, 12)
 
-/** 게임 프로젝트로 볼 폴더: gamemanager 기록이 하나라도 있음 */
+/** 게임 프로젝트로 볼 폴더: gamestudio 기록이 하나라도 있음 */
 const looksLikeGame = dir =>
   ['TODO.md', '.dev-team', join('docs', 'design.md'), join('docs', 'verification-issues.md')].some(f => {
     try {

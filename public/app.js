@@ -1,4 +1,4 @@
-// gamemanager 대시보드 화면. 서버 API 로 데이터를 받고, WebSocket 으로 변경 알림과 터미널 입출력을 주고받는다.
+// control_room 대시보드 화면. 서버 API 로 데이터를 받고, WebSocket 으로 변경 알림과 터미널 입출력을 주고받는다.
 // 파일과 세션 기록에서 온 글자는 모두 textContent 로만 넣는다 (HTML 로 해석하지 않음).
 
 const $ = sel => document.querySelector(sel)
@@ -47,9 +47,9 @@ const ROLE_LABEL = {
 const QUICK = [
   { text: '/dev-team-status', enter: true, title: '조직 현황' },
   { text: '/dev-team ', enter: false, title: '조직에 작업 맡기기 (뒤에 작업 내용 입력)' },
-  { text: '/gamemanager:dev-cycle ', enter: false, title: '코드 작업 사이클 (뒤에 작업 내용 입력)' },
-  { text: '/gamemanager:new-game', enter: true, title: '진행 단계 확인·다음 단계' },
-  { text: '/gamemanager:commit-release', enter: true, title: '버전·CHANGELOG 확인 후 커밋' },
+  { text: '/gamestudio:dev-cycle ', enter: false, title: '코드 작업 사이클 (뒤에 작업 내용 입력)' },
+  { text: '/gamestudio:new-game', enter: true, title: '진행 단계 확인·다음 단계' },
+  { text: '/gamestudio:commit-release', enter: true, title: '버전·CHANGELOG 확인 후 커밋' },
 ]
 
 const state = {
@@ -66,14 +66,14 @@ const state = {
 
 function localGet(k) {
   try {
-    return localStorage.getItem(`gm.${k}`)
+    return localStorage.getItem(`cr.${k}`)
   } catch {
     return null
   }
 }
 function localSet(k, v) {
   try {
-    localStorage.setItem(`gm.${k}`, v)
+    localStorage.setItem(`cr.${k}`, v)
   } catch {
     // 저장 못 해도 동작에는 문제없음
   }
@@ -285,7 +285,7 @@ function overview(d) {
         ),
       ),
     ),
-    !d.hasTodo && h('p', { class: 'muted' }, 'TODO.md 가 없습니다. 터미널에서 /gamemanager:new-game 으로 시작하면 진행 단계가 기록됩니다.'),
+    !d.hasTodo && h('p', { class: 'muted' }, 'TODO.md 가 없습니다. 터미널에서 /gamestudio:new-game 으로 시작하면 진행 단계가 기록됩니다.'),
     h(
       'div',
       { class: 'stats' },
@@ -319,7 +319,7 @@ function stat(label, value, note, ratio = null) {
 
 function work(d) {
   const t = d.todo
-  if (!t) return h('p', { class: 'empty' }, 'TODO.md 가 없습니다. /gamemanager:roadmap 으로 단계 계획을 만들면 여기에 표시됩니다.')
+  if (!t) return h('p', { class: 'empty' }, 'TODO.md 가 없습니다. /gamestudio:roadmap 으로 단계 계획을 만들면 여기에 표시됩니다.')
   const firstOpen = t.stages.findIndex(s => s.status !== 'done')
   return h(
     'div',

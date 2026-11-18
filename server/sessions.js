@@ -1,4 +1,4 @@
-// 게임 폴더에서 실행된 Claude Code 세션과 서브에이전트, 그리고 gamemanager 플러그인이 남기는 조직 현황 파일을 읽는다.
+// 게임 폴더에서 실행된 Claude Code 세션과 서브에이전트, 그리고 gamestudio 플러그인이 남기는 조직 현황 파일을 읽는다.
 //  - 세션 기록: ~/.claude/projects/<폴더 경로를 바꾼 이름>/<세션 id>.jsonl
 //  - 서브에이전트: 같은 폴더의 <세션 id>/subagents/agent-*.jsonl + .meta.json (agentType, description, model, finished)
 //  - 조직 현황: <게임>/.dev-team/live/<세션 id>.json (플러그인 hook 이 상태가 바뀔 때마다 씀)

@@ -1,4 +1,4 @@
-// 대시보드 설정과 접속 토큰. dashboard/.local/ 에 저장한다 (git 제외).
+// 대시보드 설정과 접속 토큰. control_room/.local/ 에 저장한다 (git 제외).
 import { execFileSync } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -6,12 +6,12 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 export const APP_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..')
-/** 설정·토큰 저장 위치. 테스트할 때는 GM_DATA_DIR 로 바꾼다 */
-const LOCAL_DIR = process.env.GM_DATA_DIR ? resolve(process.env.GM_DATA_DIR) : join(APP_DIR, '.local')
+/** 설정·토큰 저장 위치. 테스트할 때는 CONTROL_ROOM_DATA_DIR 로 바꾼다 */
+const LOCAL_DIR = process.env.CONTROL_ROOM_DATA_DIR ? resolve(process.env.CONTROL_ROOM_DATA_DIR) : join(APP_DIR, '.local')
 const CONFIG_FILE = join(LOCAL_DIR, 'config.json')
 const TOKEN_FILE = join(LOCAL_DIR, 'token')
 
-/** 기본값. 플러그인 폴더는 이 대시보드 옆의 gamemanager/ */
+/** 기본값. 플러그인 폴더는 이 대시보드 옆의 gamestudio/ */
 const DEFAULTS = {
   port: 4317,
   /** 게임들이 모여 있는 상위 폴더. 바로 아래 폴더 중 게임 프로젝트를 찾는다 */
@@ -20,7 +20,7 @@ const DEFAULTS = {
   projects: [],
   /** 비우면 PATH 에서 찾는다 */
   claudePath: '',
-  pluginDir: resolve(APP_DIR, '..', 'gamemanager'),
+  pluginDir: resolve(APP_DIR, '..', 'gamestudio'),
   /** 플러그인을 설치하지 않았으면 claude 를 --plugin-dir 로 띄운다. 설치했으면 끄세요 (두 벌로 동작함) */
   usePluginDir: true,
   /** 터미널 "셸" 메뉴로 띄울 프로그램 */

@@ -1,4 +1,4 @@
-// gamemanager 플러그인이 만드는 기록 파일(TODO.md, .dev-team/, docs/verification-issues.md)을 화면용 데이터로 바꾼다.
+// gamestudio 플러그인이 만드는 기록 파일(TODO.md, .dev-team/, docs/verification-issues.md)을 화면용 데이터로 바꾼다.
 // 형식은 플러그인 템플릿이 정하지만 사람이 고치기도 하므로, 못 읽는 줄은 버리고 계속 진행한다.
 
 /** 체크 표시 → 상태. 템플릿: [ ] 대기 / [~] 진행 중 / [x] 완료 / [-] 건너뜀 */
@@ -46,9 +46,9 @@ export function tableRows(lines) {
     .filter(cells => cells.some(c => c !== ''))
 }
 
-/** "## gamemanager 진행"(예전 "## gamekit 진행") 체크리스트 → 개발 흐름 8단계 */
+/** "## gamestudio 진행"(예전 "## gamemanager 진행"·"## gamekit 진행") 체크리스트 → 개발 흐름 8단계 */
 function parsePipeline(sections) {
-  const sec = findSection(sections, t => /^(gamemanager|gamekit) 진행/.test(t))
+  const sec = findSection(sections, t => /^(gamestudio|gamemanager|gamekit) 진행/.test(t))
   if (!sec) return []
   return sec.lines
     .map(parseCheck)

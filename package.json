@@ -1,8 +1,8 @@
 {
-  "name": "gamemanager-dashboard",
-  "version": "0.1.0",
+  "name": "control_room",
+  "version": "0.2.0",
   "private": true,
-  "description": "gamemanager 플러그인으로 만드는 게임들의 진행 상황, 세션·에이전트, 웹 터미널을 보여 주는 로컬 대시보드",
+  "description": "gamestudio 플러그인으로 만드는 게임들의 진행 상황, 세션·에이전트, 웹 터미널을 보여 주는 로컬 대시보드",
   "type": "module",
   "scripts": {
     "start": "node server/index.js --open",

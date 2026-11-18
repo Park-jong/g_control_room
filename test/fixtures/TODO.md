@@ -1,6 +1,6 @@
 # 별빛 디펜스 작업 목록
 
-## gamemanager 진행
+## gamestudio 진행
 - [x] 1. 장르·콘셉트 (`docs/design.md` 1~2장)
 - [x] 2. 프로토타입 (`prototype/index.html`)
 - [x] 3. 스택·뼈대

@@ -1,4 +1,4 @@
-// gamemanager 대시보드 서버. 이 PC 안(127.0.0.1)에서만 열리고, 접속 토큰이 있어야 쓸 수 있다.
+// control_room 대시보드 서버. 이 PC 안(127.0.0.1)에서만 열리고, 접속 토큰이 있어야 쓸 수 있다.
 // 웹 터미널은 이 PC에서 명령을 실행하므로, 다른 기기에서 접속할 수 있게 바꾸지 마세요.
 import { exec } from 'node:child_process'
 import { timingSafeEqual } from 'node:crypto'
@@ -55,7 +55,7 @@ const sameToken = given => {
   const b = Buffer.from(token)
   return a.length === b.length && timingSafeEqual(a, b)
 }
-const cookieToken = req => /(?:^|;\s*)gm_token=([a-f0-9]+)/.exec(req.headers.cookie ?? '')?.[1]
+const cookieToken = req => /(?:^|;\s*)cr_token=([a-f0-9]+)/.exec(req.headers.cookie ?? '')?.[1]
 /** 다른 사이트가 이름만 바꿔 이 서버에 붙는 것(DNS rebinding)을 막는다 */
 const hostOk = req => allowedHosts.has(String(req.headers.host ?? '').toLowerCase())
 
@@ -163,7 +163,7 @@ const server = createServer(async (req, res) => {
     if (url.searchParams.has('token')) {
       if (!sameToken(url.searchParams.get('token'))) return send(res, 401, '토큰이 맞지 않습니다. 서버 창에 출력된 주소로 다시 여세요.')
       res.writeHead(302, {
-        'set-cookie': `gm_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000`,
+        'set-cookie': `cr_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=31536000`,
         location: '/',
         ...SECURITY_HEADERS,
       })
@@ -249,7 +249,7 @@ setInterval(() => {
 
 server.listen(port, HOST, () => {
   const url = `http://127.0.0.1:${port}/?token=${token}`
-  console.log('gamemanager 대시보드가 실행 중입니다 (이 PC에서만 접속 가능)')
+  console.log('control_room 대시보드가 실행 중입니다 (이 PC에서만 접속 가능)')
   console.log(`열기: ${url}`)
   console.log('끝내려면 Ctrl+C (열려 있는 웹 터미널도 함께 종료됩니다)')
   if (process.argv.includes('--open')) {
