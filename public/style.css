@@ -981,6 +981,12 @@ tr.closed td {
   white-space: nowrap;
   max-width: 280px;
 }
+.term-tab.other-game {
+  opacity: 0.55;
+}
+.term-tab.other-game:hover {
+  opacity: 1;
+}
 .term-tab[aria-selected='true'] {
   border-color: var(--accent);
   background: var(--raised);

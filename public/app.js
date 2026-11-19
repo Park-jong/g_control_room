@@ -306,7 +306,11 @@ document.addEventListener('selectionchange', () => {
   if (state.renderPending && !selectingInDetail()) refreshDetail()
 })
 
-function select(id) {
+/**
+ * 게임을 고른다. 그 게임의 터미널이 열려 있으면 터미널도 그쪽으로 바꾸고, 없으면 지금 터미널을 그대로 둔다.
+ * keepTerminal: 터미널 탭을 눌러서 게임을 따라 바꿀 때 (터미널은 이미 골라져 있음)
+ */
+function select(id, { keepTerminal = false } = {}) {
   state.selectedId = id
   localSet('selected', id)
   state.detail = null
@@ -315,6 +319,11 @@ function select(id) {
   renderDetail()
   renderNewTermButton()
   loadDetail()
+  if (!keepTerminal) {
+    const t = terminalFor(id)
+    if (t && t.id !== state.activeTerm) showTerminal(t.id)
+    else renderTermTabs()
+  }
 }
 
 // ───────────── 게임 목록 ─────────────
@@ -814,8 +823,25 @@ function fitActive() {
   }
 }
 
+/** 게임 id → 그 게임에서 마지막으로 본 터미널 id */
+const lastTermOf = new Map()
+
+/** 게임에 해당하는 터미널: 마지막으로 본 것 → 실행 중인 것 중 최근 → 아무거나 최근 */
+function terminalFor(projectId) {
+  const mine = state.terminals.filter(t => t.projectId === projectId)
+  return mine.find(t => t.id === lastTermOf.get(projectId)) ?? mine.filter(t => !t.exited).at(-1) ?? mine.at(-1) ?? null
+}
+
+/** 터미널 탭을 눌렀을 때: 터미널을 바꾸고, 다른 게임의 터미널이면 게임도 따라 바꾼다 */
+function pickTerminal(t) {
+  showTerminal(t.id)
+  if (t.projectId !== state.selectedId && state.projects.some(p => p.id === t.projectId)) select(t.projectId, { keepTerminal: true })
+}
+
 function showTerminal(id) {
   state.activeTerm = id
+  const item = state.terminals.find(t => t.id === id)
+  if (item) lastTermOf.set(item.projectId, id)
   for (const [tid, v] of views) v.el.hidden = tid !== id
   renderTermTabs()
   if (id) {
@@ -833,7 +859,14 @@ function renderTermTabs() {
     ...state.terminals.map(t =>
       h(
         'div',
-        { class: `term-tab${t.exited ? ' exited' : ''}`, role: 'tab', 'aria-selected': String(t.id === state.activeTerm), title: t.command, onclick: () => showTerminal(t.id) },
+        {
+          // 지금 보고 있는 게임이 아닌 터미널은 흐리게 보인다
+          class: `term-tab${t.exited ? ' exited' : ''}${t.projectId !== state.selectedId ? ' other-game' : ''}`,
+          role: 'tab',
+          'aria-selected': String(t.id === state.activeTerm),
+          title: t.command,
+          onclick: () => pickTerminal(t),
+        },
         h('span', { class: 'state', 'aria-label': t.exited ? '종료됨' : '실행 중' }),
         h('span', { class: 'label' }, t.title),
         h(
@@ -939,7 +972,8 @@ function syncTerminals(items) {
   }
   state.terminals = items
   for (const item of items) ensureView(item)
-  if (!ids.has(state.activeTerm)) state.activeTerm = items.at(-1)?.id ?? null
+  // 보던 터미널이 닫혔으면 지금 게임의 터미널을 먼저, 없으면 가장 최근 터미널을 보여 준다
+  if (!ids.has(state.activeTerm)) state.activeTerm = (terminalFor(state.selectedId) ?? items.at(-1))?.id ?? null
   showTerminal(state.activeTerm)
 }
 
