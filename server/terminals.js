@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs'
 import pty from 'node-pty'
 
 import { resolveClaude } from './config.js'
+import './pty-quiet.js'
 
 /** 다시 붙을 때 보내 줄 최근 출력 크기 */
 const REPLAY_CHARS = 400_000

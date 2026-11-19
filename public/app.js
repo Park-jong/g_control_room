@@ -45,6 +45,9 @@ const ICONS = {
   flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/>',
   send: '<path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/>',
   next: '<circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="m12 16 4-4-4-4"/>',
+  bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
+  bellOff:
+    '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/>',
   ask: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   cycle: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
 }
@@ -162,6 +165,90 @@ const rel = ms => {
 }
 const dot = s => h('span', { class: 'dot', dataset: { s }, title: STATUS_TEXT[s] ?? s, 'aria-label': STATUS_TEXT[s] ?? s })
 
+// ───────────── 진행 알림 ─────────────
+// 다른 창에서 일하는 동안에도 흐름을 놓치지 않게: 탭 제목에 진행 중 에이전트 수, 켜 두면 데스크톱 알림.
+
+/** 진행 중 수가 0이 된 뒤 이만큼 계속 0이어야 "끝남"으로 본다 (팀장→팀원 사이 잠깐 0이 되는 것을 거름) */
+const DONE_CONFIRM_MS = 20000
+const APP_TITLE = 'Control Room'
+/** 게임 id → 직전 요약 { running, p0, decisions }. 첫 목록은 기준만 잡고 알리지 않는다 */
+let lastSeen = null
+const doneTimers = new Map()
+
+const canNotify = () => 'Notification' in window
+const notifyOn = () => canNotify() && Notification.permission === 'granted' && localGet('notify') === '1'
+
+function notify(projectId, kind, title, body) {
+  if (!notifyOn()) return
+  try {
+    // 같은 게임·같은 종류는 tag 로 덮어써서, 대시보드 탭을 여러 개 열어도 한 번만 보이게 한다
+    const n = new Notification(title, { body, tag: `${projectId}:${kind}`, icon: '/icon.svg' })
+    n.onclick = () => {
+      window.focus()
+      select(projectId)
+      n.close()
+    }
+  } catch {
+    // 알림을 만들 수 없는 환경이면 조용히 넘어간다
+  }
+}
+
+function watchProjects(list) {
+  const total = list.reduce((n, p) => n + (p.runningAgents ?? 0), 0)
+  document.title = total ? `(${total}) ${APP_TITLE}` : APP_TITLE
+
+  const next = new Map(list.map(p => [p.id, { running: p.runningAgents ?? 0, p0: p.p0 ?? 0, decisions: p.decisions ?? 0 }]))
+  if (lastSeen) {
+    for (const p of list) {
+      const now = next.get(p.id)
+      const before = lastSeen.get(p.id)
+      if (!before) continue
+      if (now.running > 0) {
+        clearTimeout(doneTimers.get(p.id))
+        doneTimers.delete(p.id)
+      } else if (before.running > 0 && !doneTimers.has(p.id)) {
+        doneTimers.set(
+          p.id,
+          setTimeout(() => {
+            doneTimers.delete(p.id)
+            const cur = state.projects.find(x => x.id === p.id)
+            if (cur && !cur.runningAgents) notify(p.id, 'done', cur.name, '에이전트 작업이 모두 끝났습니다')
+          }, DONE_CONFIRM_MS),
+        )
+      }
+      if (now.p0 > before.p0) notify(p.id, 'p0', p.name, `P0 요청이 ${now.p0 - before.p0}건 늘었습니다 (현재 단계를 막는 문제)`)
+      if (now.decisions > before.decisions) notify(p.id, 'decision', p.name, `내가 정해야 할 결정이 ${now.decisions - before.decisions}개 늘었습니다`)
+    }
+  }
+  lastSeen = next
+}
+
+function renderNotifyButton() {
+  const btn = $('#notify-toggle')
+  btn.hidden = !canNotify()
+  if (!canNotify()) return
+  const on = notifyOn()
+  btn.replaceChildren(icon(on ? 'bell' : 'bellOff'))
+  btn.title = on ? '데스크톱 알림 켜짐 (눌러서 끄기)' : '데스크톱 알림 꺼짐 (눌러서 켜기): 작업 끝남·P0 요청·결정 대기'
+  btn.setAttribute('aria-label', btn.title)
+  btn.setAttribute('aria-pressed', String(on))
+}
+
+async function toggleNotify() {
+  if (notifyOn()) {
+    localSet('notify', '')
+  } else {
+    const perm = Notification.permission === 'default' ? await Notification.requestPermission() : Notification.permission
+    if (perm !== 'granted') {
+      toast('브라우저에서 이 페이지의 알림이 막혀 있습니다. 주소창의 사이트 설정에서 허용하세요.', true)
+      return renderNotifyButton()
+    }
+    localSet('notify', '1')
+    toast('알림을 켰습니다')
+  }
+  renderNotifyButton()
+}
+
 // ───────────── 데이터 불러오기 ─────────────
 
 let loadingList = false
@@ -171,6 +258,7 @@ async function loadProjects() {
   try {
     state.projects = await api('projects')
     state.loaded = true
+    watchProjects(state.projects)
     if (!state.projects.some(p => p.id === state.selectedId)) state.selectedId = state.projects[0]?.id ?? null
     renderList()
     renderNewTermButton()
@@ -643,7 +731,7 @@ function sessions(d) {
                 h(
                   'div',
                   { style: 'min-width:0' },
-                  h('div', { class: 'session-title' }, s.title),
+                  h('div', { class: 'session-title', title: s.title }, s.title),
                   h('div', { class: 'session-meta' }, h('span', { title: `세션 ${s.id}` }, rel(s.updatedAt)), s.agents.length > 0 && h('span', { title: `서브에이전트 ${s.agents.length}개` }, icon('bot'), s.agents.length)),
                 ),
                 h('div', { class: 'head-actions' }, s.active && h('span', { class: 'badge live', title: '최근 2분 안에 움직임' }, '활동 중'), iconBtn('terminal', '이 세션을 터미널에서 재개', () => newTerminal('resume', s.id), '')),
@@ -765,6 +853,7 @@ function renderTermTabs() {
       ),
     ),
   )
+  renderQuick()
   // 열린 터미널이 없으면 탭 줄만 남기고 아래 칸을 줄여 상세 화면에 자리를 준다
   const empty = !state.terminals.length
   $('#term-panel').classList.toggle('empty', empty)
@@ -772,7 +861,14 @@ function renderTermTabs() {
   requestAnimationFrame(fitActive)
 }
 
+/** 빠른 명령을 받을 수 있는 터미널: 지금 보고 있는, 실행 중인 Claude 터미널 */
+const quickTarget = () => {
+  const t = state.terminals.find(x => x.id === state.activeTerm)
+  return t && !t.exited && t.mode !== 'shell' ? t : null
+}
+
 function renderQuick() {
+  const target = quickTarget()
   $('#quick').replaceChildren(
     h('span', { class: 'label', title: '빠른 명령: 실행 중인 Claude 터미널에 입력합니다' }, icon('zap')),
     ...QUICK.map(q =>
@@ -781,11 +877,12 @@ function renderQuick() {
         {
           class: 'btn small ghost',
           type: 'button',
-          title: `${q.title}\n${q.text.trim()}`,
+          title: `${q.title}\n${q.text.trim()}${target ? '' : '\n실행 중인 Claude 터미널을 열면 쓸 수 있습니다'}`,
           'aria-label': q.title,
+          disabled: !target,
           onclick: () => {
-            const t = state.terminals.find(x => x.id === state.activeTerm)
-            if (!t || t.exited) return toast('실행 중인 Claude 터미널을 먼저 여세요', true)
+            const t = quickTarget()
+            if (!t) return
             wsSend({ t: 'in', id: t.id, data: q.text + (q.enter ? '\r' : '') })
             views.get(t.id)?.term.focus()
           },
@@ -928,6 +1025,7 @@ function connect() {
       changeTimer = setTimeout(async () => {
         try {
           state.projects = await api('projects')
+          watchProjects(state.projects)
           renderList()
         } catch {
           // 다음 알림 때 다시
@@ -1014,6 +1112,8 @@ function setupMenus() {
 }
 
 $('#open-settings').replaceChildren(icon('settings'))
+$('#notify-toggle').addEventListener('click', toggleNotify)
+renderNotifyButton()
 $('#new-term').replaceChildren(icon('plus'), icon('down'))
 setupSettings()
 setupMenus()
