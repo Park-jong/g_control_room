@@ -97,7 +97,7 @@ const QUICK = [
   { text: '/dev-team-status', enter: true, icon: 'users', label: '현황', title: '조직 현황' },
   { text: '/dev-team ', enter: false, icon: 'send', label: '맡기기', title: '조직에 작업 맡기기 (뒤에 작업 내용 입력)' },
   { text: '/gamestudio:dev-cycle ', enter: false, icon: 'cycle', label: '사이클', title: '코드 작업 사이클 (뒤에 작업 내용 입력)' },
-  { text: '/gamestudio:new-game', enter: true, icon: 'next', label: '다음 단계', title: '진행 단계 확인·다음 단계' },
+  { text: '/gamestudio:next', enter: true, icon: 'next', label: '다음 단계', title: '진행 단계 확인·다음 단계' },
   { text: '/gamestudio:commit-release', enter: true, icon: 'commit', label: '커밋', title: '버전·CHANGELOG 확인 후 커밋' },
 ]
 
@@ -476,7 +476,7 @@ function overview(d) {
         ),
       ),
     ),
-    !d.hasTodo && h('p', { class: 'muted' }, 'TODO.md 가 없습니다. 터미널에서 /gamestudio:new-game 으로 시작하면 진행 단계가 기록됩니다.'),
+    !d.hasTodo && h('p', { class: 'muted' }, 'TODO.md 가 없습니다. 터미널에서 /gamestudio:next 로 시작하면 진행 단계가 기록됩니다.'),
     h(
       'div',
       { class: 'stats' },

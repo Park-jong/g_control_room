@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.4.1] - 2026-11-19
+### Changed
+- 빠른 명령 "다음 단계"와 TODO.md 없음 안내가 gamestudio 0.3.0의 새 이름 `/gamestudio:next`를 쓰도록 바꿈
+
 ## [0.4.0] - 2026-11-19
 ### Added
 - 브라우저 탭 제목에 진행 중 에이전트 수 표시 (예: `(2) Control Room`)
