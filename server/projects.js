@@ -154,12 +154,14 @@ export function summarize(project) {
     pipelineDone: done,
     current: cur ? `${cur.step ?? ''}. ${cur.label}`.replace(/^\. /, '') : '모든 단계 완료',
     tasks: todo?.tasks ?? { total: 0, done: 0, doing: 0 },
+    /** 사용자가 정해야 할 "결정 대기" 항목 수 (체크되지 않은 것만) */
+    decisions: (todo?.pending ?? []).filter(p => p.status === 'todo' || p.status === 'doing').length,
     openRequests: open.length,
     p0: open.filter(r => r.priority === 'P0').length,
     issues: { total: issues.length, critical: issues.filter(i => i.level === 'critical').length },
     activeSessions: sessions.filter(s => s.active).length,
     runningAgents: countRunning(sessions, live),
-    lastActivity: Math.max(mtime(join(project.path, 'TODO.md')), sessions[0]?.updatedAt ?? 0),
+    lastActivity: Math.max(mtime(join(project.path, 'TODO.md')), sessions[0]?.updatedAt ?? 0, ...live.map(l => l.updatedAt)),
   }
 }
 

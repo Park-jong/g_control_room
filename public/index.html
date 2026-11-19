@@ -17,7 +17,7 @@
         </div>
         <div class="topbar-right">
           <span id="conn" class="conn" data-state="connecting">연결 중</span>
-          <button id="open-settings" class="btn ghost" type="button">설정</button>
+          <button id="open-settings" class="btn ghost icon-btn" type="button" title="설정" aria-label="설정">설정</button>
         </div>
       </header>
 
@@ -36,18 +36,18 @@
           <div class="term-bar">
             <div id="term-tabs" class="term-tabs" role="tablist" aria-label="터미널"></div>
             <div class="term-actions">
+              <div id="quick" class="quick" aria-label="빠른 명령"></div>
               <div class="menu">
-                <button id="new-term" class="btn small primary" type="button" aria-haspopup="true">+ 새 터미널</button>
+                <button id="new-term" class="btn small primary icon-btn" type="button" aria-haspopup="true" title="새 터미널" aria-label="새 터미널">+ 새 터미널</button>
                 <div id="new-term-menu" class="menu-pop" hidden>
                   <button type="button" data-mode="claude">Claude 새 세션</button>
                   <button type="button" data-mode="continue">Claude 마지막 세션 이어서</button>
                   <button type="button" data-mode="shell">셸 (PowerShell)</button>
                 </div>
               </div>
-              <button id="term-toggle" class="btn small ghost" type="button" title="터미널 접기/펴기">접기</button>
+              <button id="term-toggle" class="btn small ghost icon-btn" type="button" title="터미널 접기">접기</button>
             </div>
           </div>
-          <div id="quick" class="quick" aria-label="빠른 명령"></div>
           <div id="term-host" class="term-host"></div>
         </section>
       </main>
