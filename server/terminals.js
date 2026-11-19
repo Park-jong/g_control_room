@@ -114,6 +114,14 @@ export class Terminals {
     }
   }
 
+  /** 탭 순서 바꾸기. 주어진 id 순서대로 앞에 두고, 빠진 터미널은 원래 순서대로 뒤에 둔다 */
+  reorder(ids) {
+    const wanted = (Array.isArray(ids) ? ids : []).filter(id => this.items.has(id))
+    const rest = [...this.items.keys()].filter(id => !wanted.includes(id))
+    this.items = new Map([...new Set([...wanted, ...rest])].map(id => [id, this.items.get(id)]))
+    this.onChange()
+  }
+
   /** 닫기: 돌고 있으면 끝내고 목록에서 뺀다 */
   close(id) {
     const item = this.items.get(id)

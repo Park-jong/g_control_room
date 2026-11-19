@@ -9,6 +9,7 @@ import { extname, join, normalize, resolve, sep } from 'node:path'
 import { WebSocketServer } from 'ws'
 
 import { APP_DIR, loadConfig, loadToken, resolveClaude, saveConfig } from './config.js'
+import { gitFetch } from './git.js'
 import { detail, discover, signature, summarize } from './projects.js'
 import { Terminals } from './terminals.js'
 
@@ -121,6 +122,13 @@ async function api(req, res, url) {
     const p = findProject(parts[1])
     return p ? json(res, 200, detail(p)) : json(res, 404, { error: '게임을 찾을 수 없습니다' })
   }
+  if (parts[0] === 'projects' && parts.length === 3 && parts[2] === 'fetch' && method === 'POST') {
+    const p = findProject(parts[1])
+    if (!p) return json(res, 404, { error: '게임을 찾을 수 없습니다' })
+    const result = await gitFetch(p.path)
+    if (result.ok) broadcast({ t: 'changed', ids: [p.id] })
+    return result.ok ? json(res, 200, result) : json(res, 502, { error: `원격 확인 실패: ${result.error}` })
+  }
   if (parts[0] === 'config' && method === 'GET') {
     return json(res, 200, { ...config, claudeResolved: resolveClaude(config) })
   }
@@ -147,6 +155,11 @@ async function api(req, res, url) {
       rows: Number(body.rows) || 30,
     })
     return json(res, 201, item)
+  }
+  if (parts[0] === 'terminals' && parts[1] === 'order' && parts.length === 2 && method === 'PUT') {
+    const body = await readBody(req)
+    terminals.reorder(body.ids)
+    return json(res, 200, terminals.list())
   }
   if (parts[0] === 'terminals' && parts.length === 2 && method === 'DELETE') {
     return terminals.close(parts[1]) ? json(res, 200, { ok: true }) : json(res, 404, { error: '터미널이 없습니다' })

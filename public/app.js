@@ -48,6 +48,10 @@ const ICONS = {
   bell: '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
   bellOff:
     '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M17 17H4a1 1 0 0 1-.74-1.673C4.59 13.956 6 12.499 6 8a6 6 0 0 1 .258-1.742"/><path d="m2 2 20 20"/><path d="M8.668 3.01A6 6 0 0 1 18 8c0 2.687.77 4.653 1.707 6.05"/>',
+  edit: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/>',
+  arrowUp: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+  arrowDown: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+  branch: '<line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/>',
   ask: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
   cycle: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
 }
@@ -326,18 +330,176 @@ function select(id, { keepTerminal = false } = {}) {
   }
 }
 
+// ───────────── Git 상태 ─────────────
+
+/** 커밋·push 상태 배지들. 다 깨끗하면 아무것도 돌려주지 않는다 */
+function gitBadges(g) {
+  if (!g) return []
+  return [
+    g.changedFiles > 0 && h('span', { class: 'badge git', title: `커밋 안 된 파일 ${g.changedFiles}개` }, icon('edit'), g.changedFiles),
+    g.ahead > 0 && h('span', { class: 'badge git', title: `push 안 된 커밋 ${g.ahead}개` }, icon('arrowUp'), g.ahead),
+    g.behind > 0 && h('span', { class: 'badge git', title: `원격에서 받을 커밋 ${g.behind}개 (마지막 원격 확인 기준)` }, icon('arrowDown'), g.behind),
+    !g.upstream && g.lastCommit && h('span', { class: 'badge git', title: `원격 브랜치가 없습니다 (${g.branch} 를 push 한 적 없음)` }, icon('branch'), '원격 없음'),
+  ].filter(Boolean)
+}
+
+async function fetchRemote(btn) {
+  btn.disabled = true
+  try {
+    await api(`projects/${state.selectedId}/fetch`, { method: 'POST' })
+    toast('원격을 확인했습니다')
+    loadDetail()
+  } catch (e) {
+    toast(e.message, true)
+  } finally {
+    btn.disabled = false
+  }
+}
+
+function gitCard(g, id) {
+  if (!g) return h('div', { class: 'card' }, h('h3', {}, h('span', { class: 'h3-main' }, icon('branch'), 'Git')), h('p', { class: 'empty' }, 'Git 저장소가 아닙니다'))
+  const clean = !g.changedFiles && !g.ahead && !g.behind && g.upstream
+  const parts = [g.staged && `스테이징 ${g.staged}`, g.unstaged && `수정 ${g.unstaged}`, g.untracked && `새 파일 ${g.untracked}`, g.conflicts && `충돌 ${g.conflicts}`].filter(Boolean)
+  const row = (iconName, label, value, note) => h('div', { class: 'git-row' }, icon(iconName), h('span', { class: 'git-label' }, label), h('strong', {}, value), note && h('span', { class: 'faint' }, note))
+  return h(
+    'div',
+    { class: `card git-card${g.changedFiles || g.ahead ? ' attention' : ''}` },
+    h(
+      'h3',
+      {},
+      h('span', { class: 'h3-main' }, icon('branch'), g.upstream ? `${g.branch} → ${g.upstream}` : `${g.branch} (원격 없음)`),
+      h(
+        'span',
+        { class: 'h3-main' },
+        h('span', { class: 'faint', title: g.fetchedAt ? new Date(g.fetchedAt).toLocaleString() : '' }, g.fetchedAt ? `원격 확인 ${rel(g.fetchedAt)}` : '원격 확인 안 함'),
+        g.upstream && h('button', { class: 'btn small ghost icon-btn', type: 'button', title: '원격 확인 (git fetch): 받을 커밋 수를 새로 셉니다', 'aria-label': '원격 확인', onclick: ev => fetchRemote(ev.currentTarget) }, icon('cycle')),
+      ),
+    ),
+    clean
+      ? h('p', { class: 'git-clean' }, icon('check'), '모두 커밋하고 push했습니다')
+      : [
+          row('edit', '커밋 안 된 파일', String(g.changedFiles), parts.join(' · ')),
+          g.upstream && row('arrowUp', 'push 안 된 커밋', String(g.ahead)),
+          g.upstream && g.behind > 0 && row('arrowDown', '받을 커밋', String(g.behind), '마지막 원격 확인 기준'),
+        ],
+    g.lastCommit && h('div', { class: 'git-last', title: new Date(g.lastCommit.at).toLocaleString() }, h('code', {}, g.lastCommit.hash), h('span', { class: 'git-subject' }, g.lastCommit.subject), h('span', { class: 'faint' }, rel(g.lastCommit.at))),
+    g.files?.length > 0 &&
+      h(
+        'details',
+        // 펼침 상태는 작업 탭의 단계처럼 다시 그려도 유지한다
+        { class: 'git-files', open: state.stageOpen.get(`${id}:git-files`) ?? false, ontoggle: ev => state.stageOpen.set(`${id}:git-files`, ev.currentTarget.open) },
+        h('summary', {}, `변경 파일 ${g.changedFiles > g.files.length ? `${g.files.length} / ${g.changedFiles}` : g.files.length}`),
+        h('ul', {}, g.files.map(f => h('li', {}, h('code', { class: 'git-code' }, f.code), h('span', {}, f.path)))),
+      ),
+  )
+}
+
 // ───────────── 게임 목록 ─────────────
 
+// 순서 바꾸기: 카드를 끌어 놓거나, 카드에 초점을 두고 Alt+↑/↓
+let dragId = null
+let listPending = false
+
+/** 새 순서를 화면에 먼저 반영하고 설정에 저장한다 (다른 탭·다음 실행에도 유지) */
+async function saveOrder(ids) {
+  const byId = new Map(state.projects.map(p => [p.id, p]))
+  state.projects = ids.map(id => byId.get(id)).filter(Boolean)
+  renderList()
+  try {
+    await api('config', { method: 'PUT', body: { order: state.projects.map(p => p.path) } })
+  } catch (e) {
+    toast(e.message, true)
+    loadProjects()
+  }
+}
+
+function moveGame(id, delta) {
+  const ids = state.projects.map(p => p.id)
+  const i = ids.indexOf(id)
+  const j = i + delta
+  if (i < 0 || j < 0 || j >= ids.length) return
+  ;[ids[i], ids[j]] = [ids[j], ids[i]]
+  saveOrder(ids)
+}
+
+function dropGame(movedId, targetId, after) {
+  if (!movedId || movedId === targetId) return
+  const ids = state.projects.map(p => p.id).filter(id => id !== movedId)
+  ids.splice(ids.indexOf(targetId) + (after ? 1 : 0), 0, movedId)
+  saveOrder(ids)
+}
+
+/** 끌어 놓을 위치 표시: 카드의 위쪽 절반이면 앞, 아래쪽 절반이면 뒤 */
+const dropAfter = (ev, li) => ev.clientY > li.getBoundingClientRect().top + li.offsetHeight / 2
+
+function clearDropMarks() {
+  for (const el of document.querySelectorAll('#game-list li')) el.classList.remove('drop-before', 'drop-after', 'dragging')
+}
+
 function renderList() {
+  // 끄는 도중에 목록을 다시 그리면 끌던 요소가 사라지므로 놓은 뒤에 그린다
+  if (dragId) {
+    listPending = true
+    return
+  }
   const list = $('#game-list')
+  // 다시 그려도 키보드 초점이 있던 카드에 초점을 돌려준다 (Alt+↑/↓ 를 이어서 누를 수 있게)
+  const focusedId = document.activeElement?.closest?.('#game-list li')?.dataset.id
   list.replaceChildren(
     ...state.projects.map(p =>
       h(
         'li',
-        {},
+        {
+          draggable: 'true',
+          dataset: { id: p.id },
+          ondragstart: ev => {
+            dragId = p.id
+            ev.dataTransfer.effectAllowed = 'move'
+            ev.dataTransfer.setData('text/plain', p.name)
+            ev.currentTarget.classList.add('dragging')
+          },
+          ondragover: ev => {
+            if (!dragId || dragId === p.id) return
+            ev.preventDefault()
+            ev.dataTransfer.dropEffect = 'move'
+            const after = dropAfter(ev, ev.currentTarget)
+            ev.currentTarget.classList.toggle('drop-after', after)
+            ev.currentTarget.classList.toggle('drop-before', !after)
+          },
+          ondragleave: ev => ev.currentTarget.classList.remove('drop-before', 'drop-after'),
+          ondrop: ev => {
+            ev.preventDefault()
+            const after = dropAfter(ev, ev.currentTarget)
+            const moved = dragId
+            // 끌기를 먼저 끝내야 saveOrder 가 목록을 바로 다시 그린다
+            dragId = null
+            listPending = false
+            clearDropMarks()
+            dropGame(moved, p.id, after)
+          },
+          ondragend: () => {
+            dragId = null
+            clearDropMarks()
+            if (listPending) {
+              listPending = false
+              renderList()
+            }
+          },
+        },
         h(
           'button',
-          { class: 'game', type: 'button', 'aria-current': String(p.id === state.selectedId), onclick: () => select(p.id) },
+          {
+            class: 'game',
+            type: 'button',
+            'aria-current': String(p.id === state.selectedId),
+            title: '끌어서 순서 바꾸기 (Alt+↑/↓)',
+            onclick: () => select(p.id),
+            onkeydown: ev => {
+              if (!ev.altKey || (ev.key !== 'ArrowUp' && ev.key !== 'ArrowDown')) return
+              ev.preventDefault()
+              moveGame(p.id, ev.key === 'ArrowUp' ? -1 : 1)
+            },
+          },
           h(
             'div',
             { class: 'game-top' },
@@ -360,10 +522,12 @@ function renderList() {
             ),
           ),
           !p.error && h('div', { class: 'mini-steps', 'aria-label': `개발 흐름 ${p.pipelineDone}/${p.pipeline.length} 단계 완료` }, p.pipeline.map(s => h('span', { dataset: { s: s.status }, title: `${s.step ?? ''}. ${s.label} — ${STATUS_TEXT[s.status]}` }))),
+          gitBadges(p.git).length > 0 && h('div', { class: 'badges git-badges' }, gitBadges(p.git)),
         ),
       ),
     ),
   )
+  if (focusedId) list.querySelector(`li[data-id="${focusedId}"] .game`)?.focus()
   $('#game-count').textContent = state.projects.length ? `${state.projects.length}개` : ''
 }
 
@@ -493,6 +657,7 @@ function overview(d) {
       stat('inbox', '열린 요청', String(d.openRequests), d.p0 ? `P0 ${d.p0}` : ''),
       stat('shield', '검증 기록', String(d.issues.length), d.issues.filter(i => i.level === 'critical').length ? `🚨 ${d.issues.filter(i => i.level === 'critical').length}` : ''),
       stat('bot', '에이전트', String(d.runningAgents), d.activeSessions ? `활동 세션 ${d.activeSessions}` : ''),
+      d.git && gitStat(d.git),
     ),
     h(
       'div',
@@ -505,10 +670,22 @@ function overview(d) {
         h('h3', {}, h('span', { class: 'h3-main' }, d.decisions > 0 && icon('ask'), '결정 대기'), d.decisions > 0 && h('span', { class: 'faint' }, '내가 정할 것')),
         listOrEmpty((t?.pending ?? []).filter(p => p.status !== 'done').map(p => p.text), '사용자가 정할 것이 없습니다'),
       ),
+      gitCard(d.git, d.id),
       reqP0.length > 0 && h('div', { class: 'card' }, h('h3', { title: '현재 단계를 막는 문제' }, 'P0 요청'), listOrEmpty(reqP0.map(r => `${r.id} ${route(r)} · ${r.title}`))),
       h('div', { class: 'card' }, h('h3', {}, '최근 결정 기록'), listOrEmpty((t?.decisions ?? []).slice(-5).reverse())),
     ),
   )
+}
+
+/** 통계 줄의 Git 칸: 커밋 안 된 파일 수와 push 상태. 누르면 아래 Git 카드로 내려간다 */
+function gitStat(g) {
+  const note = !g.upstream ? '원격 브랜치 없음' : g.ahead ? `push 안 된 커밋 ${g.ahead}` : g.behind ? `받을 커밋 ${g.behind}` : g.changedFiles ? 'push 할 커밋 없음' : '모두 커밋·push됨'
+  const el = stat('branch', '커밋 안 된 파일', String(g.changedFiles), note)
+  el.classList.add('clickable')
+  if (g.changedFiles || g.ahead || !g.upstream) el.classList.add('attention')
+  el.title = '눌러서 Git 상세 보기'
+  el.addEventListener('click', () => document.querySelector('.git-card')?.scrollIntoView({ behavior: 'smooth', block: 'center' }))
+  return el
 }
 
 function stat(iconName, label, value, note, ratio = null) {
@@ -838,7 +1015,7 @@ function pickTerminal(t) {
   if (t.projectId !== state.selectedId && state.projects.some(p => p.id === t.projectId)) select(t.projectId, { keepTerminal: true })
 }
 
-function showTerminal(id) {
+function showTerminal(id, { focus = true } = {}) {
   state.activeTerm = id
   const item = state.terminals.find(t => t.id === id)
   if (item) lastTermOf.set(item.projectId, id)
@@ -848,13 +1025,41 @@ function showTerminal(id) {
     attachView(id)
     requestAnimationFrame(() => {
       fitActive()
-      views.get(id)?.term.focus()
+      if (focus) views.get(id)?.term.focus()
     })
   }
 }
 
+// 터미널 탭 순서 바꾸기: 탭을 끌어 놓거나, 탭에 초점을 두고 Alt+←/→. 순서는 서버가 기억한다 (서버를 끄면 터미널과 함께 사라짐)
+let termDragId = null
+
+async function saveTermOrder(ids) {
+  const byId = new Map(state.terminals.map(t => [t.id, t]))
+  state.terminals = ids.map(id => byId.get(id)).filter(Boolean)
+  renderTermTabs()
+  try {
+    await api('terminals/order', { method: 'PUT', body: { ids } })
+  } catch (e) {
+    toast(e.message, true)
+  }
+}
+
+function moveTerm(id, delta) {
+  const ids = state.terminals.map(t => t.id)
+  const i = ids.indexOf(id)
+  const j = i + delta
+  if (i < 0 || j < 0 || j >= ids.length) return
+  ;[ids[i], ids[j]] = [ids[j], ids[i]]
+  saveTermOrder(ids)
+}
+
+/** 탭의 왼쪽 절반이면 앞, 오른쪽 절반이면 뒤 */
+const termDropAfter = (ev, el) => ev.clientX > el.getBoundingClientRect().left + el.offsetWidth / 2
+
 function renderTermTabs() {
   const tabs = $('#term-tabs')
+  const focusedId = document.activeElement?.closest?.('.term-tab')?.dataset.id
+  const clearMarks = () => tabs.querySelectorAll('.term-tab').forEach(el => el.classList.remove('drop-before', 'drop-after', 'dragging'))
   tabs.replaceChildren(
     ...state.terminals.map(t =>
       h(
@@ -863,9 +1068,50 @@ function renderTermTabs() {
           // 지금 보고 있는 게임이 아닌 터미널은 흐리게 보인다
           class: `term-tab${t.exited ? ' exited' : ''}${t.projectId !== state.selectedId ? ' other-game' : ''}`,
           role: 'tab',
+          tabindex: '0',
+          draggable: 'true',
+          dataset: { id: t.id },
           'aria-selected': String(t.id === state.activeTerm),
-          title: t.command,
+          title: `${t.command}
+끌어서 순서 바꾸기 (Alt+←/→)`,
           onclick: () => pickTerminal(t),
+          onkeydown: ev => {
+            if (ev.key === 'Enter' || ev.key === ' ') {
+              ev.preventDefault()
+              pickTerminal(t)
+            } else if (ev.altKey && (ev.key === 'ArrowLeft' || ev.key === 'ArrowRight')) {
+              ev.preventDefault()
+              moveTerm(t.id, ev.key === 'ArrowLeft' ? -1 : 1)
+            }
+          },
+          ondragstart: ev => {
+            termDragId = t.id
+            ev.dataTransfer.effectAllowed = 'move'
+            ev.dataTransfer.setData('text/plain', t.title)
+            ev.currentTarget.classList.add('dragging')
+          },
+          ondragover: ev => {
+            if (!termDragId || termDragId === t.id) return
+            ev.preventDefault()
+            const after = termDropAfter(ev, ev.currentTarget)
+            ev.currentTarget.classList.toggle('drop-after', after)
+            ev.currentTarget.classList.toggle('drop-before', !after)
+          },
+          ondragleave: ev => ev.currentTarget.classList.remove('drop-before', 'drop-after'),
+          ondrop: ev => {
+            ev.preventDefault()
+            const moved = termDragId
+            termDragId = null
+            clearMarks()
+            if (!moved || moved === t.id) return
+            const ids = state.terminals.map(x => x.id).filter(id => id !== moved)
+            ids.splice(ids.indexOf(t.id) + (termDropAfter(ev, ev.currentTarget) ? 1 : 0), 0, moved)
+            saveTermOrder(ids)
+          },
+          ondragend: () => {
+            termDragId = null
+            clearMarks()
+          },
         },
         h('span', { class: 'state', 'aria-label': t.exited ? '종료됨' : '실행 중' }),
         h('span', { class: 'label' }, t.title),
@@ -886,6 +1132,7 @@ function renderTermTabs() {
       ),
     ),
   )
+  if (focusedId) tabs.querySelector(`.term-tab[data-id="${focusedId}"]`)?.focus()
   renderQuick()
   // 열린 터미널이 없으면 탭 줄만 남기고 아래 칸을 줄여 상세 화면에 자리를 준다
   const empty = !state.terminals.length
@@ -973,8 +1220,10 @@ function syncTerminals(items) {
   state.terminals = items
   for (const item of items) ensureView(item)
   // 보던 터미널이 닫혔으면 지금 게임의 터미널을 먼저, 없으면 가장 최근 터미널을 보여 준다
+  const before = state.activeTerm
   if (!ids.has(state.activeTerm)) state.activeTerm = (terminalFor(state.selectedId) ?? items.at(-1))?.id ?? null
-  showTerminal(state.activeTerm)
+  // 순서만 바뀐 경우처럼 보던 터미널이 그대로면 초점을 뺏지 않는다
+  showTerminal(state.activeTerm, { focus: state.activeTerm !== before })
 }
 
 function setCollapsed(c) {

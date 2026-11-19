@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { basename, join, resolve } from 'node:path'
 
+import { gitStatus, gitSummary } from './git.js'
 import { parseIssues, parseTeamRoadmap, parseTodo, parseWorklog } from './parse.js'
 import { listLive, listSessions, sessionsSignature } from './sessions.js'
 
@@ -83,7 +84,17 @@ export function discover(config) {
     }
   }
   for (const p of config.projects) add(p, 'manual')
-  return [...found.values()]
+  return sortByOrder([...found.values()], config.order ?? [])
+}
+
+/** Windows 는 경로의 대소문자를 가리지 않는다 */
+const samePathKey = p => (process.platform === 'win32' ? resolve(p).toLowerCase() : resolve(p))
+
+/** 사용자가 정한 순서대로. 순서에 없는 게임은 찾은 순서를 지키며 뒤에 둔다 */
+export function sortByOrder(projects, order) {
+  const rank = new Map(order.map((p, i) => [samePathKey(p), i]))
+  const at = p => rank.get(samePathKey(p.path)) ?? Infinity
+  return projects.map((p, i) => ({ p, i })).sort((a, b) => at(a.p) - at(b.p) || a.i - b.i).map(x => x.p)
 }
 
 function packageVersion(path) {
@@ -161,6 +172,7 @@ export function summarize(project) {
     issues: { total: issues.length, critical: issues.filter(i => i.level === 'critical').length },
     activeSessions: sessions.filter(s => s.active).length,
     runningAgents: countRunning(sessions, live),
+    git: gitSummary(project.path),
     lastActivity: Math.max(mtime(join(project.path, 'TODO.md')), sessions[0]?.updatedAt ?? 0, ...live.map(l => l.updatedAt)),
   }
 }
@@ -184,6 +196,7 @@ export function detail(project) {
     teams,
     sessions,
     live,
+    git: gitStatus(project.path),
   }
 }
 
@@ -198,5 +211,8 @@ export function signature(project) {
     ...TEAMS.flatMap(t => ['roadmap.md', 'worklog.md'].map(f => join(p, '.dev-team', 'teams', t.key, f))),
     ...list(join(p, '.dev-team', 'live')).map(f => join(p, '.dev-team', 'live', f)),
   ]
-  return [...files.map(mtime), sessionsSignature(p)].join(',')
+  // Git 상태는 10초 캐시라, 파일을 고치거나 커밋·push 하면 늦어도 그 안에 화면이 바뀐다
+  const g = gitSummary(p)
+  const gitSig = g ? [g.branch, g.changedFiles, g.staged, g.ahead, g.behind, g.lastCommit?.hash, g.fetchedAt].join('|') : ''
+  return [...files.map(mtime), sessionsSignature(p), gitSig].join(',')
 }

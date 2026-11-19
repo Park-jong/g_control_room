@@ -34,3 +34,16 @@ test('목록 요약: 현재 단계는 번호순, 결정 대기는 체크되지 �
   assert.equal(s.decisions, 1)
   assert.ok(s.lastActivity > 0)
 })
+
+test('게임 목록 순서: 정한 순서가 먼저, 나머지는 찾은 순서대로 뒤에', async () => {
+  const { sortByOrder } = await import('../server/projects.js')
+  const g = name => ({ id: name, path: join(root, name) })
+  const found = [g('a'), g('b'), g('c'), g('d')]
+
+  const sorted = sortByOrder(found, [join(root, 'c'), join(root, 'a'), join(root, 'gone')])
+
+  assert.deepEqual(
+    sorted.map(p => p.id),
+    ['c', 'a', 'b', 'd'],
+  )
+})

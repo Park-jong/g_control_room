@@ -25,6 +25,8 @@ const DEFAULTS = {
   usePluginDir: true,
   /** 터미널 "셸" 메뉴로 띄울 프로그램 */
   shell: 'powershell.exe',
+  /** 왼쪽 게임 목록 순서 (게임 폴더 경로). 여기 없는 게임은 뒤에 찾은 순서대로 */
+  order: [],
 }
 
 const ensureDir = () => mkdirSync(LOCAL_DIR, { recursive: true })
@@ -52,6 +54,7 @@ export function saveConfig(patch) {
     ...(typeof patch.pluginDir === 'string' && { pluginDir: patch.pluginDir.trim() }),
     ...(typeof patch.usePluginDir === 'boolean' && { usePluginDir: patch.usePluginDir }),
     ...(typeof patch.shell === 'string' && patch.shell.trim() !== '' && { shell: patch.shell.trim() }),
+    ...(patch.order !== undefined && { order: [...new Set(asPaths(patch.order))] }),
   }
   ensureDir()
   writeFileSync(CONFIG_FILE, `${JSON.stringify(next, null, 2)}\n`)

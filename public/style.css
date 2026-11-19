@@ -260,6 +260,29 @@ h4 {
   margin: 0;
   padding: 4px 8px 16px;
 }
+/* 순서 바꾸기: 끄는 카드는 흐리게, 놓을 자리에 선 */
+#game-list li {
+  position: relative;
+}
+#game-list li.dragging {
+  opacity: 0.4;
+}
+#game-list li.drop-before::before,
+#game-list li.drop-after::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+#game-list li.drop-before::before {
+  top: -3px;
+}
+#game-list li.drop-after::after {
+  bottom: 1px;
+}
 .game {
   display: block;
   width: 100%;
@@ -376,6 +399,12 @@ h4 {
 .badge.ask {
   color: var(--accent);
   border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+}
+.git-badges {
+  margin-top: 6px;
+}
+.badge.git {
+  border-style: dashed;
 }
 .badge.warn {
   color: var(--doing);
@@ -557,6 +586,15 @@ h4 {
   width: 14px;
   height: 14px;
 }
+.stat.clickable {
+  cursor: pointer;
+}
+.stat.clickable:hover {
+  border-color: var(--border-strong);
+}
+.stat.attention {
+  border-color: color-mix(in srgb, var(--accent) 55%, var(--border));
+}
 .stat-value {
   font-size: 22px;
   font-weight: 700;
@@ -610,6 +648,66 @@ h4 {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+/* Git 카드 */
+.git-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  padding: 2px 0;
+}
+.git-row .icon {
+  width: 13px;
+  height: 13px;
+  color: var(--muted);
+}
+.git-label {
+  color: var(--muted);
+}
+.git-clean {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--done);
+}
+.git-last {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin-top: 8px;
+  font-size: 12px;
+  min-width: 0;
+}
+.git-last .faint {
+  white-space: nowrap;
+}
+.git-subject {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.git-files {
+  margin-top: 8px;
+  font-size: 12px;
+}
+.git-files summary {
+  cursor: pointer;
+  color: var(--muted);
+}
+.git-files ul {
+  max-height: 180px;
+  overflow: auto;
+}
+.git-code {
+  display: inline-block;
+  width: 2.2em;
+  color: var(--doing);
+  white-space: pre;
 }
 .card ul {
   margin: 0;
@@ -980,6 +1078,29 @@ tr.closed td {
   cursor: pointer;
   white-space: nowrap;
   max-width: 280px;
+}
+/* 터미널 탭 순서 바꾸기: 놓을 자리에 세로선 */
+.term-tab {
+  position: relative;
+}
+.term-tab.dragging {
+  opacity: 0.4;
+}
+.term-tab.drop-before::before,
+.term-tab.drop-after::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  border-radius: 1px;
+  background: var(--accent);
+}
+.term-tab.drop-before::before {
+  left: -4px;
+}
+.term-tab.drop-after::after {
+  right: -4px;
 }
 .term-tab.other-game {
   opacity: 0.55;
